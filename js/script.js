@@ -24,7 +24,7 @@ console.log("Tracking script loaded successfully");
 
         // Check for Do Not Track settings or user consent
         if ((n.getAttribute("data-dnt") === "true" && navigator.doNotTrack) || 
-            navigator.globalPrivacyControl || !checkUserConsent()) {
+            navigator.globalPrivacyControl) {
             console.warn("Tracking aborted due to Do Not Track or lack of user consent");
             return !1;
         }
