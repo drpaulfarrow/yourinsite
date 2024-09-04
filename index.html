@@ -21,6 +21,7 @@
             padding: 1rem 0;
             color: white;
             text-align: center;
+            position: relative;
         }
 
         header h1 {
@@ -32,6 +33,20 @@
         header p {
             margin: 0.5rem 0 1rem;
             font-size: 1.2rem;
+        }
+
+        /* Login/Sign-In Button */
+        .login-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ffc107;
+            padding: 0.5rem 1rem;
+            color: #004085;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
         }
 
         .hero {
@@ -131,6 +146,13 @@
             .feature {
                 width: 80%;
             }
+
+            /* Adjust login button for smaller screens */
+            .login-btn {
+                position: static;
+                transform: none;
+                margin-top: 1rem;
+            }
         }
     </style>
 </head>
@@ -139,6 +161,8 @@
 <header>
     <h1>YourInsite</h1>
     <p>Privacy-Focused Web Analytics & Dashboard Solutions</p>
+    <!-- Login Button -->
+    <a href="login-signup.html" class="login-btn">Login/Sign Up</a>
 </header>
 
 <section class="hero">
