@@ -11,6 +11,46 @@ console.log("Tracking script loaded successfully");
         };
     }
 
+    // Anonymize URL by stripping query parameters
+    function anonymizeURL(url) {
+        try {
+            const parsedUrl = new URL(url);
+            return `${parsedUrl.origin}${parsedUrl.pathname}`;
+        } catch (error) {
+            console.error("Error anonymizing URL:", error);
+            return url;
+        }
+    }
+
+    // Anonymize referrer URL
+    function anonymizeReferrer(referrer) {
+        if (!referrer) return '';
+        return anonymizeURL(referrer);
+    }
+
+    // Mock function to get user's IP address (can be replaced with a real service)
+    async function getUserIP() {
+        // You'd typically use a service like ipify or similar to fetch the public IP
+        return "192.168.1.1";  // Mock IP address for demonstration purposes
+    }
+
+    // Hash and anonymize the IP address
+    function anonymizeAndHashIP(ip) {
+        // Simple hash for demonstration purposes (you should use a better hashing mechanism)
+        let hashedIP = btoa(ip);  // Base64 encoding as a mock hash
+        return hashedIP;
+    }
+
+    // Function to get a hashed session ID
+    function getHashedSessionID() {
+        return btoa("session_" + Math.random().toString(36).substring(2));
+    }
+
+    // Function to obfuscate screen resolution
+    function getObfuscatedScreenResolution() {
+        return `${window.screen.width}x${window.screen.height}`;
+    }
+
     // Main tracking function
     async function t(t, r) {
         console.log("Tracking function 't' started");
