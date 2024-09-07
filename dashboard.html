@@ -100,12 +100,10 @@
         fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${date}`)
             .then(response => response.json())
             .then(data => {
-                if (data && data.length > 0) {
-                    const pageData = data[0]; // Assuming you get an array of results
-
+                if (data) {
                     // Update the dashboard with data
-                    document.getElementById('page-loads').innerText = pageData.page_loads;
-                    document.getElementById('distinct-users').innerText = pageData.distinct_users;
+                    document.getElementById('page-loads').innerText = data.totalPageViews;
+                    document.getElementById('distinct-users').innerText = data.totalDistinctUsers;
                 } else {
                     document.getElementById('error-message').style.display = 'block';
                 }
