@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Page Analytics Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            width: 150px;
+            padding: 20px;
+            background-color: #eaeaea;
+            border-radius: 8px;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-label {
+            font-size: 18px;
+            color: #666;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Page Analytics Dashboard</h1>
+    </header>
+
+    <div class="container">
+        <h2>Analytics for: <span id="page-url"></span> on <span id="date"></span></h2>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-number" id="page-loads">0</div>
+                <div class="stat-label">Page Loads</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-number" id="distinct-users">0</div>
+                <div class="stat-label">Distinct Users</div>
+            </div>
+        </div>
+
+        <div id="error-message" style="color: red; text-align: center; display: none;">
+            <p>Failed to load data. Please try again later.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>Powered by YourInSite</p>
+    </footer>
+
+    <script>
+        // Configuration for the page and date
+        const page = 'https://yourin.site/';
+        const date = '2024-09-07';
+
+        // Update the UI with the page and date
+        document.getElementById('page-url').innerText = page;
+        document.getElementById('date').innerText = date;
+
+        // Fetch the data from the backend API
+        fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const pageData = data[0]; // Assuming you get an array of results
+
+                    // Update the dashboard with data
+                    document.getElementById('page-loads').innerText = pageData.page_loads;
+                    document.getElementById('distinct-users').innerText = pageData.distinct_users;
+                } else {
+                    document.getElementById('error-message').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching aggregated data:', error);
+                document.getElementById('error-message').style.display = 'block';
+            });
+    </script>
+
+</body>
+</html>
