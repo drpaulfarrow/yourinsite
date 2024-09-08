@@ -88,10 +88,19 @@ console.log("Tracking script loaded successfully");
         return null;
     }
 
-    // Call this in your tracking function to set or retrieve the user ID
-    const { userId, isNewUser } = getUserId();
-    console.log("User ID:", userId);
-    console.log("Is new user:", isNewUser);
+    // Function to check if cookies are enabled
+    function areCookiesEnabled() {
+        // Try setting a test cookie
+        document.cookie = "test_cookie=1; SameSite=Lax";
+
+        // Check if the cookie exists
+        const cookiesEnabled = document.cookie.indexOf("test_cookie=") !== -1;
+
+        // Remove the test cookie
+        document.cookie = "test_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+
+        return cookiesEnabled;
+    }
 
     // Main tracking function
     async function t(t, r) {
@@ -111,6 +120,7 @@ console.log("Tracking script loaded successfully");
             return !1;
         }
 
+        // An object to hold tracking data
         var a = {};
         a.referrer = r || anonymizeReferrer(document.referrer);
         console.log("Referrer:", a.referrer);
@@ -118,7 +128,7 @@ console.log("Tracking script loaded successfully");
         console.log("Page URL:", a.page);
         a.screen_resolution = getObfuscatedScreenResolution();
         console.log("Screen resolution:", a.screen_resolution);
-        
+
         // Get and anonymize the user's IP
         try {
             a.ip_address = anonymizeAndHashIP(await getUserIP());
@@ -126,18 +136,26 @@ console.log("Tracking script loaded successfully");
         } catch (error) {
             console.error("Error retrieving IP address:", error);
         }
-        
+
         a.session_id = getHashedSessionID();
         console.log("Session ID:", a.session_id);
-        
-        // Include user ID and new user flag in the tracking data
-        a.user_id = userId;
-        a.is_new_user = isNewUser;
-        console.log("User ID:", a.user_id);
-        console.log("Is new user:", a.is_new_user);
-
         a.timestamp = new Date().toISOString();
         console.log("Timestamp:", a.timestamp);
+
+        // Check if cookies are enabled
+        if (areCookiesEnabled()) {
+            // If cookies are enabled, retrieve or generate a user ID
+            const { userId, isNewUser } = getUserId();
+            a.user_id = userId;
+            a.is_new_user = isNewUser;
+            console.log("User ID:", a.user_id);
+            console.log("Is new user:", a.is_new_user);
+        } else {
+            // If cookies are disabled, don't generate or track user ID
+            a.user_id = null;
+            a.is_new_user = false;
+            console.warn("Cookies are disabled, user ID will not be tracked");
+        }
 
         // Send the tracking data to the server
         await sendTrackingData(a, "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/event");
