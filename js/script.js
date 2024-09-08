@@ -1,4 +1,4 @@
-console.log("Tracking script loaded successfully");
+console.log("yourin.site: Tracking script loaded successfully");
 
 !function(e){"use strict";
 
@@ -17,7 +17,7 @@ console.log("Tracking script loaded successfully");
             const parsedUrl = new URL(url);
             return `${parsedUrl.origin}${parsedUrl.pathname}`;
         } catch (error) {
-            console.error("Error anonymizing URL:", error);
+            console.error("yourin.site: Error anonymizing URL:", error);
             return url;
         }
     }
@@ -104,43 +104,43 @@ console.log("Tracking script loaded successfully");
 
     // Main tracking function
     async function t(t, r) {
-        console.log("Tracking function 't' started");
+        console.log("yourin.site: Tracking function 't' started");
 
         var n = document.getElementById("ZwSg9rf6GA");
         if (!n) {
-            console.error("Element with ID 'ZwSg9rf6GA' not found");
+            console.error("yourin.site: Element with ID 'ZwSg9rf6GA' not found");
             return;
         }
-        console.log("Found tracking element 'ZwSg9rf6GA'", n);
+        console.log("yourin.site: Found tracking element 'ZwSg9rf6GA'", n);
 
         // Check for Do Not Track settings or user consent
         if ((n.getAttribute("data-dnt") === "true" && navigator.doNotTrack) || 
             navigator.globalPrivacyControl) {
-            console.warn("Tracking aborted due to Do Not Track or lack of user consent");
+            console.warn("yourin.site: Tracking aborted due to Do Not Track or lack of user consent");
             return !1;
         }
 
         // An object to hold tracking data
         var a = {};
         a.referrer = r || anonymizeReferrer(document.referrer);
-        console.log("Referrer:", a.referrer);
+        console.log("yourin.site: Referrer:", a.referrer);
         a.page = anonymizeURL(window.location.href.replace(/#.+$/, ""));
-        console.log("Page URL:", a.page);
+        console.log("yourin.site: Page URL:", a.page);
         a.screen_resolution = getObfuscatedScreenResolution();
-        console.log("Screen resolution:", a.screen_resolution);
+        console.log("yourin.site: Screen resolution:", a.screen_resolution);
 
         // Get and anonymize the user's IP
         try {
             a.ip_address = anonymizeAndHashIP(await getUserIP());
-            console.log("IP address:", a.ip_address);
+            console.log("yourin.site: IP address:", a.ip_address);
         } catch (error) {
-            console.error("Error retrieving IP address:", error);
+            console.error("yourin.site: Error retrieving IP address:", error);
         }
 
         a.session_id = getHashedSessionID();
-        console.log("Session ID:", a.session_id);
+        console.log("yourin.site: Session ID:", a.session_id);
         a.timestamp = new Date().toISOString();
-        console.log("Timestamp:", a.timestamp);
+        console.log("yourin.site: Timestamp:", a.timestamp);
 
         // Check if cookies are enabled
         if (areCookiesEnabled()) {
@@ -148,13 +148,13 @@ console.log("Tracking script loaded successfully");
             const { userId, isNewUser } = getUserId();
             a.user_id = userId;
             a.is_new_user = isNewUser;
-            console.log("User ID:", a.user_id);
-            console.log("Is new user:", a.is_new_user);
+            console.log("yourin.site: User ID:", a.user_id);
+            console.log("yourin.site: Is new user:", a.is_new_user);
         } else {
             // If cookies are disabled, don't generate or track user ID
             a.user_id = null;
             a.is_new_user = false;
-            console.warn("Cookies are disabled, user ID will not be tracked");
+            console.warn("yourin.site: Cookies are disabled, user ID will not be tracked");
         }
 
         // Send the tracking data to the server
@@ -163,8 +163,8 @@ console.log("Tracking script loaded successfully");
 
     // Function to send the data to the server
     async function sendTrackingData(data, url) {
-        console.log("Sending tracking data to:", url);
-        console.log("Payload being sent:", data);
+        console.log("yourin.site: Sending tracking data to:", url);
+        console.log("yourin.site: Payload being sent:", data);
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -176,9 +176,9 @@ console.log("Tracking script loaded successfully");
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            console.log('Event tracked successfully');
+            console.log('yourin.site: Event tracked successfully');
         } catch (error) {
-            console.error('Error sending tracking data:', error);
+            console.error('yourin.site: Error sending tracking data:', error);
         }
     }
 
@@ -186,36 +186,36 @@ console.log("Tracking script loaded successfully");
     try {
         var r = history.pushState;
         history.pushState = function () {
-            console.log("History state changed");
+            console.log("yourin.site: History state changed");
             var n = e.location.href.replace(/#.+$/, "");
             r.apply(history, arguments);
             t(null, n);  // Track history changes
         };
         e.onpopstate = function () { 
-            console.log("Popstate event detected (back/forward navigation)");
+            console.log("yourin.site: Popstate event detected (back/forward navigation)");
             t(null); 
         };  // Track browser back/forward navigation
         e.pa = {};
         e.pa.track = debounceTrack(t, 500);  // Debounce to avoid excessive tracking
-        console.log("Initial page load tracking");
+        console.log("yourin.site: Initial page load tracking");
         t(null);  // Initial page load tracking
     } catch (e) {
-        console.error("Error initializing tracking:", e.message);
+        console.error("yourin.site: Error initializing tracking:", e.message);
     }
 
     // Ensure the tracking function is called after the page loads
     window.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM fully loaded");
+        console.log("yourin.site: DOM fully loaded");
         try {
             var n = document.getElementById("ZwSg9rf6GA");
             if (n) {
-                console.log("Triggering the tracking function after DOMContentLoaded");
+                console.log("yourin.site: Triggering the tracking function after DOMContentLoaded");
                 t(null);  // Trigger the tracking function
             } else {
-                console.error("Tracking element with ID 'ZwSg9rf6GA' not found after DOMContentLoaded");
+                console.error("yourin.site: Tracking element with ID 'ZwSg9rf6GA' not found after DOMContentLoaded");
             }
         } catch (error) {
-            console.error('Error initiating tracking after DOMContentLoaded:', error);
+            console.error('yourin.site: Error initiating tracking after DOMContentLoaded:', error);
         }
     });
 
