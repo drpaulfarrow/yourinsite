@@ -25,10 +25,10 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            padding: 20px 0;
+        canvas {
+            margin: 20px auto;
+            max-width: 100%;
+            height: 230px;
         }
         .stat-box {
             text-align: center;
@@ -36,19 +36,6 @@
             padding: 20px;
             background-color: #eaeaea;
             border-radius: 8px;
-        }
-        .stat-number {
-            font-size: 36px;
-            font-weight: bold;
-            color: #333;
-        }
-        .stat-label {
-            font-size: 18px;
-            color: #666;
-        }
-        canvas {
-            margin: 20px auto;
-            max-width: 100%;
         }
         footer {
             text-align: center;
@@ -71,20 +58,9 @@
     <div class="container">
         <h2>Analytics for: <span id="page-url"></span> on <span id="date"></span></h2>
 
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-number" id="page-loads">0</div>
-                <div class="stat-label">Page Loads</div>
-            </div>
-
-            <div class="stat-box">
-                <div class="stat-number" id="distinct-users">0</div>
-                <div class="stat-label">Distinct Users</div>
-            </div>
+        <div style="height: 230px">
+            <canvas id="trend-chart"></canvas>
         </div>
-
-        <!-- Chart container -->
-        <canvas id="myChart"></canvas>
 
         <div id="error-message" style="color: red; text-align: center; display: none;">
             <p>Failed to load data. Please try again later.</p>
@@ -96,83 +72,97 @@
     </footer>
 
     <script>
-        // Configuration for the page
-        const page = 'https://yourin.site/';
+        'use strict';
 
-        // Get the current date in YYYY-MM-DD format
-        const currentDate = new Date().toISOString().split('T')[0];
+        document.addEventListener("DOMContentLoaded", function() {
+            const page = 'https://yourin.site/';
+            const currentDate = new Date().toISOString().split('T')[0];
 
-        // Update the UI with the page and current date
-        document.getElementById('page-url').innerText = page;
-        document.getElementById('date').innerText = currentDate;
+            document.getElementById('page-url').innerText = page;
+            document.getElementById('date').innerText = currentDate;
 
-        // Fetch the data from the backend API using the current date
-        fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${currentDate}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data) {
-                    // Update the dashboard with data
-                    document.getElementById('page-loads').innerText = data.totalPageViews;
-                    document.getElementById('distinct-users').innerText = data.totalDistinctUsers;
+            fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${currentDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        // Assuming API returns aggregatedHourlyData with hourly breakdown of metrics
+                        let tooltipTitles = [];
+                        let pageLoads = [];
+                        let distinctUsers = [];
 
-                    // Assuming your API provides hourly data, prepare data for chart
-                    const hours = [];  // Example: [0, 1, 2, ..., 23]
-                    const pageLoadsPerHour = [];  // Page loads per hour
-                    const distinctUsersPerHour = [];  // Distinct users per hour
+                        data.aggregatedHourlyData.forEach(hourData => {
+                            tooltipTitles.push(`${hourData.hour}:00`);
+                            pageLoads.push(hourData.page_loads);
+                            distinctUsers.push(hourData.distinct_users);
+                        });
 
-                    // Populate with hourly data (assuming the backend returns it)
-                    data.aggregatedHourlyData.forEach(hourData => {
-                        hours.push(hourData.hour);
-                        pageLoadsPerHour.push(hourData.page_loads);
-                        distinctUsersPerHour.push(hourData.distinct_users);
-                    });
+                        const ctx = document.getElementById('trend-chart').getContext('2d');
+                        const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient1.addColorStop(0, 'rgba(255, 99, 132, 0.35)');
+                        gradient1.addColorStop(1, 'rgba(255, 99, 132, 0.01)');
 
-                    // Create chart
-                    const ctx = document.getElementById('myChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: hours,
-                            datasets: [{
-                                label: 'Page Loads',
-                                data: pageLoadsPerHour,
-                                borderColor: 'rgba(75, 192, 192, 1)',
-                                borderWidth: 2,
-                                fill: false
-                            }, {
-                                label: 'Distinct Users',
-                                data: distinctUsersPerHour,
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                borderWidth: 2,
-                                fill: false
-                            }]
-                        },
-                        options: {
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Hour'
+                        const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient2.addColorStop(0, 'rgba(54, 162, 235, 0.35)');
+                        gradient2.addColorStop(1, 'rgba(54, 162, 235, 0.01)');
+
+                        let trendChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: tooltipTitles,
+                                datasets: [{
+                                    label: 'Visitors',
+                                    data: distinctUsers,
+                                    fill: true,
+                                    backgroundColor: gradient1,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    pointBorderColor: 'rgb(255, 99, 132)',
+                                    pointBackgroundColor: 'rgb(255, 99, 132)',
+                                }, {
+                                    label: 'Pageviews',
+                                    data: pageLoads,
+                                    fill: true,
+                                    backgroundColor: gradient2,
+                                    borderColor: 'rgb(54, 162, 235)',
+                                    pointBorderColor: 'rgb(54, 162, 235)',
+                                    pointBackgroundColor: 'rgb(54, 162, 235)',
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: true
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
                                     }
                                 },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Count'
+                                scales: {
+                                    x: {
+                                        display: true
                                     },
-                                    beginAtZero: true
+                                    y: {
+                                        display: true,
+                                        beginAtZero: true
+                                    }
                                 }
                             }
-                        }
-                    });
-                } else {
+                        });
+                    } else {
+                        document.getElementById('error-message').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching aggregated data:', error);
                     document.getElementById('error-message').style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching aggregated data:', error);
-                document.getElementById('error-message').style.display = 'block';
-            });
+                });
+        });
     </script>
 
 </body>
