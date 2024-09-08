@@ -88,16 +88,18 @@
     </footer>
 
     <script>
-        // Configuration for the page and date
+        // Configuration for the page
         const page = 'https://yourin.site/';
-        const date = '2024-09-07';
 
-        // Update the UI with the page and date
+        // Get the current date in YYYY-MM-DD format
+        const currentDate = new Date().toISOString().split('T')[0];
+
+        // Update the UI with the page and current date
         document.getElementById('page-url').innerText = page;
-        document.getElementById('date').innerText = date;
+        document.getElementById('date').innerText = currentDate;
 
-        // Fetch the data from the backend API
-        fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${date}`)
+        // Fetch the data from the backend API using the current date
+        fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${currentDate}`)
             .then(response => response.json())
             .then(data => {
                 if (data) {
