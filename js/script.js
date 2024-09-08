@@ -30,13 +30,11 @@ console.log("Tracking script loaded successfully");
 
     // Mock function to get user's IP address (can be replaced with a real service)
     async function getUserIP() {
-        // You'd typically use a service like ipify or similar to fetch the public IP
         return "192.168.1.1";  // Mock IP address for demonstration purposes
     }
 
     // Hash and anonymize the IP address
     function anonymizeAndHashIP(ip) {
-        // Simple hash for demonstration purposes (you should use a better hashing mechanism)
         let hashedIP = btoa(ip);  // Base64 encoding as a mock hash
         return hashedIP;
     }
@@ -64,12 +62,18 @@ console.log("Tracking script loaded successfully");
     // Function to generate or get a user ID (mocked for now)
     function getUserId() {
         let userId = getCookie('user_id');
+        let isNewUser = false;
+
         if (!userId) {
-            // Generate a new user ID if it doesn't exist
+            // If user_id doesn't exist, it's a new user
+            isNewUser = true;
+            // Generate a new user ID
             userId = 'user_' + Math.random().toString(36).substring(2);
             setUserCookie(userId);
         }
-        return userId;
+
+        // Return both the userId and isNewUser flag
+        return { userId, isNewUser };
     }
 
     // Helper function to retrieve a cookie value by name
@@ -85,8 +89,9 @@ console.log("Tracking script loaded successfully");
     }
 
     // Call this in your tracking function to set or retrieve the user ID
-    const userId = getUserId();
+    const { userId, isNewUser } = getUserId();
     console.log("User ID:", userId);
+    console.log("Is new user:", isNewUser);
 
     // Main tracking function
     async function t(t, r) {
@@ -125,9 +130,11 @@ console.log("Tracking script loaded successfully");
         a.session_id = getHashedSessionID();
         console.log("Session ID:", a.session_id);
         
-        // Include user ID in the tracking data
+        // Include user ID and new user flag in the tracking data
         a.user_id = userId;
+        a.is_new_user = isNewUser;
         console.log("User ID:", a.user_id);
+        console.log("Is new user:", a.is_new_user);
 
         a.timestamp = new Date().toISOString();
         console.log("Timestamp:", a.timestamp);
