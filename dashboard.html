@@ -46,6 +46,10 @@
             font-size: 18px;
             color: #666;
         }
+        canvas {
+            margin: 20px auto;
+            max-width: 100%;
+        }
         footer {
             text-align: center;
             padding: 10px;
@@ -56,6 +60,7 @@
             width: 100%;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -77,6 +82,9 @@
                 <div class="stat-label">Distinct Users</div>
             </div>
         </div>
+
+        <!-- Chart container -->
+        <canvas id="myChart"></canvas>
 
         <div id="error-message" style="color: red; text-align: center; display: none;">
             <p>Failed to load data. Please try again later.</p>
@@ -106,6 +114,57 @@
                     // Update the dashboard with data
                     document.getElementById('page-loads').innerText = data.totalPageViews;
                     document.getElementById('distinct-users').innerText = data.totalDistinctUsers;
+
+                    // Assuming your API provides hourly data, prepare data for chart
+                    const hours = [];  // Example: [0, 1, 2, ..., 23]
+                    const pageLoadsPerHour = [];  // Page loads per hour
+                    const distinctUsersPerHour = [];  // Distinct users per hour
+
+                    // Populate with hourly data (assuming the backend returns it)
+                    data.aggregatedHourlyData.forEach(hourData => {
+                        hours.push(hourData.hour);
+                        pageLoadsPerHour.push(hourData.page_loads);
+                        distinctUsersPerHour.push(hourData.distinct_users);
+                    });
+
+                    // Create chart
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: hours,
+                            datasets: [{
+                                label: 'Page Loads',
+                                data: pageLoadsPerHour,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 2,
+                                fill: false
+                            }, {
+                                label: 'Distinct Users',
+                                data: distinctUsersPerHour,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 2,
+                                fill: false
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Hour'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Count'
+                                    },
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
                 } else {
                     document.getElementById('error-message').style.display = 'block';
                 }
