@@ -51,6 +51,43 @@ console.log("Tracking script loaded successfully");
         return `${window.screen.width}x${window.screen.height}`;
     }
 
+    // Function to set a third-party cookie
+    function setUserCookie(userId) {
+        const cookieName = 'user_id';
+        const daysToExpire = 365; // Set the cookie to expire in 1 year
+        const date = new Date();
+        date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
+        const expires = "expires=" + date.toUTCString();
+        document.cookie = `${cookieName}=${userId}; ${expires}; path=/; Secure; SameSite=None`;
+    }
+
+    // Function to generate or get a user ID (mocked for now)
+    function getUserId() {
+        let userId = getCookie('user_id');
+        if (!userId) {
+            // Generate a new user ID if it doesn't exist
+            userId = 'user_' + Math.random().toString(36).substring(2);
+            setUserCookie(userId);
+        }
+        return userId;
+    }
+
+    // Helper function to retrieve a cookie value by name
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+    // Call this in your tracking function to set or retrieve the user ID
+    const userId = getUserId();
+    console.log("User ID:", userId);
+
     // Main tracking function
     async function t(t, r) {
         console.log("Tracking function 't' started");
@@ -87,6 +124,11 @@ console.log("Tracking script loaded successfully");
         
         a.session_id = getHashedSessionID();
         console.log("Session ID:", a.session_id);
+        
+        // Include user ID in the tracking data
+        a.user_id = userId;
+        console.log("User ID:", a.user_id);
+
         a.timestamp = new Date().toISOString();
         console.log("Timestamp:", a.timestamp);
 
