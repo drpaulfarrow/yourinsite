@@ -28,17 +28,6 @@ console.log("yourin.site: Tracking script loaded successfully");
         return anonymizeURL(referrer);
     }
 
-    // Mock function to get user's IP address (can be replaced with a real service)
-    async function getUserIP() {
-        return "192.168.1.1";  // Mock IP address for demonstration purposes
-    }
-
-    // Hash and anonymize the IP address
-    function anonymizeAndHashIP(ip) {
-        let hashedIP = btoa(ip);  // Base64 encoding as a mock hash
-        return hashedIP;
-    }
-
     // Function to get a hashed session ID
     function getHashedSessionID() {
         return btoa("session_" + Math.random().toString(36).substring(2));
@@ -102,6 +91,18 @@ console.log("yourin.site: Tracking script loaded successfully");
         return cookiesEnabled;
     }
 
+    // Function to get the public IP address using an external service
+    async function getUserIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;  // Return the public IP address
+        } catch (error) {
+            console.error('yourin.site: Error fetching IP address:', error);
+            return null;  // Return null in case of error
+        }
+    }
+
     // Main tracking function
     async function t(t, r) {
         console.log("yourin.site: Tracking function 't' started");
@@ -129,13 +130,9 @@ console.log("yourin.site: Tracking script loaded successfully");
         a.screen_resolution = getObfuscatedScreenResolution();
         console.log("yourin.site: Screen resolution:", a.screen_resolution);
 
-        // Get and anonymize the user's IP
-        try {
-            a.ip_address = anonymizeAndHashIP(await getUserIP());
-            console.log("yourin.site: IP address:", a.ip_address);
-        } catch (error) {
-            console.error("yourin.site: Error retrieving IP address:", error);
-        }
+        // Get and add the user's public IP to the tracking data
+        a.ip_address = await getUserIP();
+        console.log("yourin.site: IP address:", a.ip_address);
 
         a.session_id = getHashedSessionID();
         console.log("yourin.site: Session ID:", a.session_id);
