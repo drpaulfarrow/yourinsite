@@ -57,7 +57,8 @@
 
     <div class="container">
         <h2>Analytics for: <span id="page-url"></span> on <span id="date"></span></h2>
-
+        <input type="date" id="date-picker" />
+        
         <div style="height: 230px">
             <canvas id="trend-chart"></canvas>
         </div>
@@ -72,97 +73,136 @@
     </footer>
 
     <script>
-        'use strict';
+       'use strict';
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const page = 'https://yourin.site/';
-            const currentDate = new Date().toISOString().split('T')[0];
+document.addEventListener("DOMContentLoaded", function() {
+    const page = 'https://yourin.site/';
+    const datePicker = document.getElementById('date-picker');
+    const dateDisplay = document.getElementById('date');
+    const pageUrlDisplay = document.getElementById('page-url');
+    let trendChart;
 
-            document.getElementById('page-url').innerText = page;
-            document.getElementById('date').innerText = currentDate;
+    // Set initial page and date
+    pageUrlDisplay.innerText = page;
+    const currentDate = new Date().toISOString().split('T')[0];
+    datePicker.value = currentDate;
+    dateDisplay.innerText = currentDate;
 
-            fetch(`https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data?page=${encodeURIComponent(page)}&date=${currentDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data) {
-                        // Assuming API returns aggregatedHourlyData with hourly breakdown of metrics
-                        let tooltipTitles = [];
-                        let pageLoads = [];
-                        let distinctUsers = [];
+    // Function to determine API URL based on environment (file://, local or production)
+    function getApiUrl() {
+        const isFileProtocol = window.location.protocol === "file:";
+        const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
-                        data.aggregatedHourlyData.forEach(hourData => {
-                            tooltipTitles.push(`${hourData.hour}:00`);
-                            pageLoads.push(hourData.page_loads);
-                            distinctUsers.push(hourData.distinct_users);
-                        });
+        if (isFileProtocol || isLocalhost) {
+            return "http://localhost:8080/api/aggregated-data"; // Local test environment
+        } else {
+            return "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data"; // Production
+        }
+    }
 
-                        const ctx = document.getElementById('trend-chart').getContext('2d');
-                        const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
-                        gradient1.addColorStop(0, 'rgba(255, 99, 132, 0.35)');
-                        gradient1.addColorStop(1, 'rgba(255, 99, 132, 0.01)');
+    // Function to fetch and update data based on the selected date
+    function fetchAndUpdateData(selectedDate) {
+        dateDisplay.innerText = selectedDate;
 
-                        const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
-                        gradient2.addColorStop(0, 'rgba(54, 162, 235, 0.35)');
-                        gradient2.addColorStop(1, 'rgba(54, 162, 235, 0.01)');
+        const apiUrl = getApiUrl(); // Get the appropriate API URL
 
-                        let trendChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: tooltipTitles,
-                                datasets: [{
-                                    label: 'Visitors',
-                                    data: distinctUsers,
-                                    fill: true,
-                                    backgroundColor: gradient1,
-                                    borderColor: 'rgb(255, 99, 132)',
-                                    pointBorderColor: 'rgb(255, 99, 132)',
-                                    pointBackgroundColor: 'rgb(255, 99, 132)',
-                                }, {
-                                    label: 'Pageviews',
-                                    data: pageLoads,
-                                    fill: true,
-                                    backgroundColor: gradient2,
-                                    borderColor: 'rgb(54, 162, 235)',
-                                    pointBorderColor: 'rgb(54, 162, 235)',
-                                    pointBackgroundColor: 'rgb(54, 162, 235)',
-                                }]
+        fetch(`${apiUrl}?page=${encodeURIComponent(page)}&date=${selectedDate}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    // Assuming API returns aggregatedHourlyData with hourly breakdown of metrics
+                    let tooltipTitles = [];
+                    let pageLoads = [];
+                    let distinctUsers = [];
+
+                    data.aggregatedHourlyData.forEach(hourData => {
+                        tooltipTitles.push(`${hourData.hour}:00`);
+                        pageLoads.push(hourData.page_loads);
+                        distinctUsers.push(hourData.distinct_users);
+                    });
+
+                    const ctx = document.getElementById('trend-chart').getContext('2d');
+                    const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
+                    gradient1.addColorStop(0, 'rgba(255, 99, 132, 0.35)');
+                    gradient1.addColorStop(1, 'rgba(255, 99, 132, 0.01)');
+
+                    const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
+                    gradient2.addColorStop(0, 'rgba(54, 162, 235, 0.35)');
+                    gradient2.addColorStop(1, 'rgba(54, 162, 235, 0.01)');
+
+                    // If the chart already exists, destroy it before creating a new one
+                    if (trendChart) {
+                        trendChart.destroy();
+                    }
+
+                    trendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: tooltipTitles,
+                            datasets: [{
+                                label: 'Visitors',
+                                data: distinctUsers,
+                                fill: true,
+                                backgroundColor: gradient1,
+                                borderColor: 'rgb(255, 99, 132)',
+                                pointBorderColor: 'rgb(255, 99, 132)',
+                                pointBackgroundColor: 'rgb(255, 99, 132)',
+                            }, {
+                                label: 'Pageviews',
+                                data: pageLoads,
+                                fill: true,
+                                backgroundColor: gradient2,
+                                borderColor: 'rgb(54, 162, 235)',
+                                pointBorderColor: 'rgb(54, 162, 235)',
+                                pointBackgroundColor: 'rgb(54, 162, 235)',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
                             },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: {
+                            plugins: {
+                                legend: {
+                                    display: true
+                                },
+                                tooltip: {
                                     mode: 'index',
                                     intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: true
                                 },
-                                plugins: {
-                                    legend: {
-                                        display: true
-                                    },
-                                    tooltip: {
-                                        mode: 'index',
-                                        intersect: false
-                                    }
-                                },
-                                scales: {
-                                    x: {
-                                        display: true
-                                    },
-                                    y: {
-                                        display: true,
-                                        beginAtZero: true
-                                    }
+                                y: {
+                                    display: true,
+                                    beginAtZero: true
                                 }
                             }
-                        });
-                    } else {
-                        document.getElementById('error-message').style.display = 'block';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching aggregated data:', error);
+                        }
+                    });
+                } else {
                     document.getElementById('error-message').style.display = 'block';
-                });
-        });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching aggregated data:', error);
+                document.getElementById('error-message').style.display = 'block';
+            });
+    }
+
+    // Initialize with current date
+    fetchAndUpdateData(currentDate);
+
+    // Listen for date picker change
+    datePicker.addEventListener('change', function() {
+        const selectedDate = this.value;
+        fetchAndUpdateData(selectedDate);
+    });
+});
     </script>
 
 </body>

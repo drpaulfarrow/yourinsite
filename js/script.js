@@ -1,5 +1,19 @@
 console.log("yourin.site: Tracking script loaded successfully");
 
+// Dynamically load UAParser.js library
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.2/ua-parser.min.js';
+script.onload = function () {
+    console.log('yourin.site: UAParser.js loaded successfully');
+    
+    // Your existing tracking logic that depends on UAParser.js can go here
+};
+script.onerror = function () {
+    console.error('yourin.site: Error loading UAParser.js');
+};
+document.head.appendChild(script);
+
+
 !function(e){"use strict";
 
     // Debounce function to avoid excessive tracking calls
@@ -103,81 +117,109 @@ console.log("yourin.site: Tracking script loaded successfully");
         }
     }
 
-    // Main tracking function
-    async function t(t, r) {
-        console.log("yourin.site: Tracking function 't' started");
-
-        var n = document.getElementById("ZwSg9rf6GA");
-        if (!n) {
-            console.error("yourin.site: Element with ID 'ZwSg9rf6GA' not found");
-            return;
-        }
-        console.log("yourin.site: Found tracking element 'ZwSg9rf6GA'", n);
-
-        // Check for Do Not Track settings or user consent
-        if ((n.getAttribute("data-dnt") === "true" && navigator.doNotTrack) || 
-            navigator.globalPrivacyControl) {
-            console.warn("yourin.site: Tracking aborted due to Do Not Track or lack of user consent");
-            return !1;
-        }
-
-        // An object to hold tracking data
-        var a = {};
-        a.referrer = r || anonymizeReferrer(document.referrer);
-        console.log("yourin.site: Referrer:", a.referrer);
-        a.page = anonymizeURL(window.location.href.replace(/#.+$/, ""));
-        console.log("yourin.site: Page URL:", a.page);
-        a.screen_resolution = getObfuscatedScreenResolution();
-        console.log("yourin.site: Screen resolution:", a.screen_resolution);
-
-        // Get and add the user's public IP to the tracking data
-        a.ip_address = await getUserIP();
-        console.log("yourin.site: IP address:", a.ip_address);
-
-        a.session_id = getHashedSessionID();
-        console.log("yourin.site: Session ID:", a.session_id);
-        a.timestamp = new Date().toISOString();
-        console.log("yourin.site: Timestamp:", a.timestamp);
-
-        // Check if cookies are enabled
-        if (areCookiesEnabled()) {
-            // If cookies are enabled, retrieve or generate a user ID
-            const { userId, isNewUser } = getUserId();
-            a.user_id = userId;
-            a.is_new_user = isNewUser;
-            console.log("yourin.site: User ID:", a.user_id);
-            console.log("yourin.site: Is new user:", a.is_new_user);
+// Function to get device information using UAParser.js (if available) or basic navigator.userAgent
+function getDeviceInfo() {
+    let deviceInfo = {};
+    try {
+        if (typeof UAParser !== 'undefined') {
+            const parser = new UAParser();
+            const result = parser.getResult();
+            deviceInfo = {
+                browser: result.browser.name || 'unknown',
+                browser_version: result.browser.version || 'unknown',
+                os: result.os.name || 'unknown',
+                os_version: result.os.version || 'unknown',
+                device_type: result.device.type || 'desktop', // mobile, tablet, or desktop
+                device_vendor: result.device.vendor || 'unknown',
+                device_model: result.device.model || 'unknown'
+            };
         } else {
-            // If cookies are disabled, don't generate or track user ID
-            a.user_id = null;
-            a.is_new_user = false;
-            console.warn("yourin.site: Cookies are disabled, user ID will not be tracked");
+            // Fallback to basic user agent parsing if UAParser is not available
+            const userAgent = navigator.userAgent || 'unknown';
+            deviceInfo = {
+                browser: /firefox/i.test(userAgent) ? 'Firefox' : /chrome|crios/i.test(userAgent) ? 'Chrome' : /safari/i.test(userAgent) ? 'Safari' : /trident|msie/i.test(userAgent) ? 'IE' : 'unknown',
+                os: /windows/i.test(userAgent) ? 'Windows' : /macintosh/i.test(userAgent) ? 'Mac OS' : /android/i.test(userAgent) ? 'Android' : /iphone|ipad/i.test(userAgent) ? 'iOS' : 'unknown',
+                device_type: /mobile/i.test(userAgent) ? 'mobile' : /tablet/i.test(userAgent) ? 'tablet' : 'desktop'
+            };
         }
-
-        // Send the tracking data to the server
-        await sendTrackingData(a, "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/event");
+    } catch (error) {
+        console.error('yourin.site: Error getting device info:', error);
+        deviceInfo = { browser: 'unknown', os: 'unknown', device_type: 'unknown' };
     }
 
-    // Function to send the data to the server
-    async function sendTrackingData(data, url) {
-        console.log("yourin.site: Sending tracking data to:", url);
-        console.log("yourin.site: Payload being sent:", data);
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            console.log('yourin.site: Event tracked successfully');
-        } catch (error) {
-            console.error('yourin.site: Error sending tracking data:', error);
-        }
+    return deviceInfo;
+}
+
+// Main tracking function
+async function t(t, r) {
+    console.log("yourin.site: Tracking function 't' started");
+
+    var n = document.getElementById("ZwSg9rf6GA");
+    if (!n) {
+        console.error("yourin.site: Element with ID 'ZwSg9rf6GA' not found");
+        return;
     }
+
+    // Check for Do Not Track settings or user consent
+    if ((n.getAttribute("data-dnt") === "true" && navigator.doNotTrack) || navigator.globalPrivacyControl) {
+        console.warn("yourin.site: Tracking aborted due to Do Not Track or lack of user consent");
+        return !1;
+    }
+
+    // An object to hold tracking data
+    var a = {};
+    a.referrer = r || anonymizeReferrer(document.referrer);
+    a.page = anonymizeURL(window.location.href.replace(/#.+$/, ""));
+    a.screen_resolution = getObfuscatedScreenResolution();
+    a.ip_address = await getUserIP();
+    a.session_id = getHashedSessionID();
+    a.timestamp = new Date().toISOString();
+
+    // Get device information
+    const deviceInfo = getDeviceInfo();
+    a.device_info = deviceInfo;
+    console.log("yourin.site: Device info:", a.device_info);
+
+    // Check if cookies are enabled
+    if (areCookiesEnabled()) {
+        const { userId, isNewUser } = getUserId();
+        a.user_id = userId;
+        a.is_new_user = isNewUser;
+    } else {
+        a.user_id = null;
+        a.is_new_user = false;
+    }
+
+    // Determine the correct API URL based on protocol and hostname
+    const apiUrl = window.location.protocol === "file:" || window.location.hostname.includes("localhost")
+        ? "http://localhost:8080/api/event"
+        : "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/event";
+
+    // Send the tracking data to the server
+    await sendTrackingData(a, apiUrl);
+}
+
+
+// Function to send the data to the server
+async function sendTrackingData(data, url) {
+    console.log("yourin.site: Sending tracking data to:", url);
+    console.log("yourin.site: Payload being sent:", data);
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        console.log('yourin.site: Event tracked successfully');
+    } catch (error) {
+        console.error('yourin.site: Error sending tracking data:', error);
+    }
+}
 
     // Initialize event tracking on page load and history changes
     try {
