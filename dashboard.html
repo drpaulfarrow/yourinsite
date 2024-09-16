@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Page Analytics Dashboard</title>
+
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <title>Page Analytics Dashboard</title>
     <style>
         body {
@@ -12,12 +24,14 @@
             padding: 0;
             background-color: #f4f4f4;
         }
+
         header {
             background-color: #4CAF50;
             color: white;
             padding: 15px;
             text-align: center;
         }
+
         .container {
             max-width: 1000px;
             margin: 20px auto;
@@ -25,11 +39,17 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         canvas {
+            display: block;
+            width: 100% !important;
+            /* Ensure the canvas takes up full width */
+            height: 400px;
+            /* You can adjust the height as needed */
             margin: 20px auto;
-            max-width: 100%;
-            height: 230px;
         }
+
+
         .stat-box {
             text-align: center;
             width: 150px;
@@ -37,6 +57,7 @@
             background-color: #eaeaea;
             border-radius: 8px;
         }
+
         footer {
             text-align: center;
             padding: 10px;
@@ -46,9 +67,47 @@
             bottom: 0;
             width: 100%;
         }
+
+        .info-box {
+            text-align: center;
+            width: 200px;
+            padding: 10px;
+            margin: 10px;
+            background-color: #dfe6e9;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .aggregate-info {
+            margin-top: 20px;
+        }
+
+        .aggregate-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .aggregate-info th,
+        .aggregate-info td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .aggregate-info th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
 
     <header>
@@ -58,152 +117,303 @@
     <div class="container">
         <h2>Analytics for: <span id="page-url"></span> on <span id="date"></span></h2>
         <input type="date" id="date-picker" />
-        
+
         <div style="height: 230px">
             <canvas id="trend-chart"></canvas>
         </div>
+
+        <div class="aggregate-info">
+            <h3>Browser Usage</h3>
+            <table id="browser-info">
+                <thead>
+                    <tr>
+                        <th>Browser</th>
+                        <th>Users</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>OS Usage</h3>
+            <table id="os-info">
+                <thead>
+                    <tr>
+                        <th>Operating System</th>
+                        <th>Users</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Location Info</h3>
+            <table id="location-info">
+                <thead>
+                    <tr>
+                        <th>City</th>
+                        <th>Country</th>
+                        <th>Users</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="map"></div>
 
         <div id="error-message" style="color: red; text-align: center; display: none;">
             <p>Failed to load data. Please try again later.</p>
         </div>
     </div>
 
-    <footer>
-        <p>Powered by YourInSite</p>
-    </footer>
-
     <script>
-       'use strict';
+        'use strict';
 
-document.addEventListener("DOMContentLoaded", function() {
-    const page = 'https://yourin.site/';
-    const datePicker = document.getElementById('date-picker');
-    const dateDisplay = document.getElementById('date');
-    const pageUrlDisplay = document.getElementById('page-url');
-    let trendChart;
+        document.addEventListener("DOMContentLoaded", function () {
+            const page = 'https://yourin.site/';
+            const datePicker = document.getElementById('date-picker');
+            const dateDisplay = document.getElementById('date');
+            const pageUrlDisplay = document.getElementById('page-url');
+            let trendChart;
 
-    // Set initial page and date
-    pageUrlDisplay.innerText = page;
-    const currentDate = new Date().toISOString().split('T')[0];
-    datePicker.value = currentDate;
-    dateDisplay.innerText = currentDate;
+            // Set initial page and date
+            pageUrlDisplay.innerText = page;
+            const currentDate = new Date().toISOString().split('T')[0];
+            datePicker.value = currentDate;
+            dateDisplay.innerText = currentDate;
 
-    // Function to determine API URL based on environment (file://, local or production)
-    function getApiUrl() {
-        const isFileProtocol = window.location.protocol === "file:";
-        const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+            // Function to determine API URL based on environment (file://, local or production)
+            function getApiUrl() {
+                const isFileProtocol = window.location.protocol === "file:";
+                const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
-        if (isFileProtocol || isLocalhost) {
-            return "http://localhost:8080/api/aggregated-data"; // Local test environment
-        } else {
-            return "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data"; // Production
-        }
-    }
+                if (isFileProtocol || isLocalhost) {
+                    return "http://localhost:8080/api/aggregated-data"; // Local test environment
+                } else {
+                    return "https://yourinsiteserverside-gdd3afe5awgscnak.westeurope-01.azurewebsites.net/api/aggregated-data"; // Production
+                }
+            }
 
-    // Function to fetch and update data based on the selected date
-    function fetchAndUpdateData(selectedDate) {
-        dateDisplay.innerText = selectedDate;
+            // Function to update the table
+            function updateTable(dataMap, tableId) {
+                const tableBody = document.querySelector(`#${tableId} tbody`);
+                tableBody.innerHTML = '';
 
-        const apiUrl = getApiUrl(); // Get the appropriate API URL
+                for (const key in dataMap) {
+                    const row = document.createElement('tr');
 
-        fetch(`${apiUrl}?page=${encodeURIComponent(page)}&date=${selectedDate}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data) {
-                    // Assuming API returns aggregatedHourlyData with hourly breakdown of metrics
-                    let tooltipTitles = [];
-                    let pageLoads = [];
-                    let distinctUsers = [];
+                    if (tableId === 'location-info') {
+                        const [city, country] = key.split(', '); // Split the key into city and country
+                        const cityCell = document.createElement('td');
+                        cityCell.textContent = city;
+                        const countryCell = document.createElement('td');
+                        countryCell.textContent = country;
+                        const countCell = document.createElement('td');
+                        countCell.textContent = dataMap[key];
 
-                    data.aggregatedHourlyData.forEach(hourData => {
-                        tooltipTitles.push(`${hourData.hour}:00`);
-                        pageLoads.push(hourData.page_loads);
-                        distinctUsers.push(hourData.distinct_users);
-                    });
-
-                    const ctx = document.getElementById('trend-chart').getContext('2d');
-                    const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
-                    gradient1.addColorStop(0, 'rgba(255, 99, 132, 0.35)');
-                    gradient1.addColorStop(1, 'rgba(255, 99, 132, 0.01)');
-
-                    const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
-                    gradient2.addColorStop(0, 'rgba(54, 162, 235, 0.35)');
-                    gradient2.addColorStop(1, 'rgba(54, 162, 235, 0.01)');
-
-                    // If the chart already exists, destroy it before creating a new one
-                    if (trendChart) {
-                        trendChart.destroy();
+                        row.appendChild(cityCell);
+                        row.appendChild(countryCell);
+                        row.appendChild(countCell);
+                    } else {
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = key;
+                        const countCell = document.createElement('td');
+                        countCell.textContent = dataMap[key];
+                        row.appendChild(nameCell);
+                        row.appendChild(countCell);
                     }
 
-                    trendChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: tooltipTitles,
-                            datasets: [{
-                                label: 'Visitors',
-                                data: distinctUsers,
-                                fill: true,
-                                backgroundColor: gradient1,
-                                borderColor: 'rgb(255, 99, 132)',
-                                pointBorderColor: 'rgb(255, 99, 132)',
-                                pointBackgroundColor: 'rgb(255, 99, 132)',
-                            }, {
-                                label: 'Pageviews',
-                                data: pageLoads,
-                                fill: true,
-                                backgroundColor: gradient2,
-                                borderColor: 'rgb(54, 162, 235)',
-                                pointBorderColor: 'rgb(54, 162, 235)',
-                                pointBackgroundColor: 'rgb(54, 162, 235)',
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
-                            plugins: {
-                                legend: {
-                                    display: true
-                                },
-                                tooltip: {
-                                    mode: 'index',
-                                    intersect: false
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    display: true
-                                },
-                                y: {
-                                    display: true,
-                                    beginAtZero: true
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    document.getElementById('error-message').style.display = 'block';
+                    tableBody.appendChild(row);
                 }
-            })
-            .catch(error => {
-                console.error('Error fetching aggregated data:', error);
-                document.getElementById('error-message').style.display = 'block';
+            }
+
+            // Function to create the Leaflet map and load data
+            function createMap(userLocationMap) {
+                const countryNameMapping = {
+                    "United States": "United States of America",
+                    "Russia": "Russian Federation",
+                    "South Korea": "Korea, Republic of",
+                    // Add more mappings as needed
+                };
+
+                const map = L.map('map').setView([20, 0], 2); // Initial world view
+
+                // Load a tile layer (map background)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Load GeoJSON data for countries
+                const countryDataUrl = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json';
+
+                // Fetch GeoJSON data and add to map
+                fetch(countryDataUrl)
+                    .then(response => response.json())
+                    .then(geojsonData => {
+                        L.geoJSON(geojsonData, {
+                            onEachFeature: function (feature, layer) {
+                                let countryName = feature.properties.name;
+
+                                // Use the mapping if the country name exists in the mapping, otherwise use the original name
+                                countryName = countryNameMapping[countryName] || countryName;
+
+                                // Extract user data for this country from locationMap
+                                let users = 0;
+                                for (const key in userLocationMap) {
+                                    const [, country] = key.split(', ');
+                                    if (country === countryName) {
+                                        users += userLocationMap[key];
+                                    }
+                                }
+
+                                // Style each country
+                                layer.setStyle({
+                                    fillColor: users > 0 ? '#2E8B57' : '#ccc', // Green if users > 0, gray otherwise
+                                    weight: 1,
+                                    color: '#666',
+                                    fillOpacity: 0.6
+                                });
+
+                                // Tooltip showing the number of users on hover
+                                layer.bindTooltip(`${countryName}: ${users} user(s)`, { sticky: true });
+
+                                // Change style on hover
+                                layer.on('mouseover', function () {
+                                    layer.setStyle({
+                                        weight: 3,
+                                        color: '#000',
+                                        fillOpacity: 0.8
+                                    });
+                                });
+
+                                // Reset style on mouseout
+                                layer.on('mouseout', function () {
+                                    layer.setStyle({
+                                        weight: 1,
+                                        color: '#666',
+                                        fillOpacity: 0.6
+                                    });
+                                });
+                            }
+                        }).addTo(map);
+                    })
+                    .catch(error => console.error('Error loading GeoJSON data:', error));
+            }
+
+
+            // Function to fetch and update data based on the selected date
+            function fetchAndUpdateData(selectedDate) {
+                dateDisplay.innerText = selectedDate;
+
+                const apiUrl = getApiUrl(); // Get the appropriate API URL
+
+                fetch(`${apiUrl}?page=${encodeURIComponent(page)}&date=${selectedDate}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data) {
+                            // Assuming API returns aggregatedHourlyData with hourly breakdown of metrics
+                            let tooltipTitles = [];
+                            let pageLoads = [];
+                            let distinctUsers = [];
+
+                            data.aggregatedHourlyData.forEach(hourData => {
+                                tooltipTitles.push(`${hourData.hour}:00`);
+                                pageLoads.push(hourData.page_loads);
+                                distinctUsers.push(hourData.distinct_users);
+                            });
+
+                            const ctx = document.getElementById('trend-chart').getContext('2d');
+                            const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient1.addColorStop(0, 'rgba(255, 99, 132, 0.35)');
+                            gradient1.addColorStop(1, 'rgba(255, 99, 132, 0.01)');
+
+                            const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient2.addColorStop(0, 'rgba(54, 162, 235, 0.35)');
+                            gradient2.addColorStop(1, 'rgba(54, 162, 235, 0.01)');
+
+                            // If the chart already exists, destroy it before creating a new one
+                            if (trendChart) {
+                                trendChart.destroy();
+                            }
+
+                            trendChart = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: tooltipTitles,
+                                    datasets: [{
+                                        label: 'Visitors',
+                                        data: distinctUsers,
+                                        fill: true,
+                                        backgroundColor: gradient1,
+                                        borderColor: 'rgb(255, 99, 132)',
+                                        pointBorderColor: 'rgb(255, 99, 132)',
+                                        pointBackgroundColor: 'rgb(255, 99, 132)',
+                                    }, {
+                                        label: 'Pageviews',
+                                        data: pageLoads,
+                                        fill: true,
+                                        backgroundColor: gradient2,
+                                        borderColor: 'rgb(54, 162, 235)',
+                                        pointBorderColor: 'rgb(54, 162, 235)',
+                                        pointBackgroundColor: 'rgb(54, 162, 235)',
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    interaction: {
+                                        mode: 'index',
+                                        intersect: false
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            display: true
+                                        },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            display: true
+                                        },
+                                        y: {
+                                            display: true,
+                                            beginAtZero: true
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Use browserMap, osMap, and locationMap from the API response directly
+                            updateTable(data.browserMap, 'browser-info');
+                            updateTable(data.osMap, 'os-info');
+                            updateTable(data.locationMap, 'location-info');
+
+                            // Add the map using the locationMap
+                            createMap(data.locationMap);
+                        } else {
+                            document.getElementById('error-message').style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching aggregated data:', error);
+                        document.getElementById('error-message').style.display = 'block';
+                    });
+            }
+
+            // Initialize with current date
+            fetchAndUpdateData(currentDate);
+
+            // Listen for date picker change
+            datePicker.addEventListener('change', function () {
+                const selectedDate = this.value;
+                fetchAndUpdateData(selectedDate);
             });
-    }
+        });
 
-    // Initialize with current date
-    fetchAndUpdateData(currentDate);
-
-    // Listen for date picker change
-    datePicker.addEventListener('change', function() {
-        const selectedDate = this.value;
-        fetchAndUpdateData(selectedDate);
-    });
-});
     </script>
 
 </body>
+
 </html>
